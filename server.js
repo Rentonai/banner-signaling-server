@@ -117,7 +117,7 @@ io.on('connection', (socket) => {
       
       // Validate input
       if (!roomCode || !nickname || 
-          roomCode.length > 8 || nickname.length > 16) {
+          roomCode.length > 50 || nickname.length > 16) {
         socket.emit('join-error', { message: 'Invalid room code or nickname' });
         return;
       }
@@ -272,6 +272,52 @@ io.on('connection', (socket) => {
 
     } catch (error) {
       logActivity('Error in chat-message', { error: error.message });
+    }
+  });
+
+  // Handle private chat invitations
+  socket.on('private-chat-invite', (data) => {
+    try {
+      const { fromUser, toUser, roomCode } = data;
+      
+      if (!fromUser || !toUser || !roomCode) {
+        logActivity('Invalid private chat invite data', data);
+        return;
+      }
+
+      // Find the target user's socket
+      let targetSocketId = null;
+      for (const [socketId, userInfo] of userSockets.entries()) {
+        if (userInfo.nickname === toUser) {
+          targetSocketId = socketId;
+          break;
+        }
+      }
+
+      if (targetSocketId) {
+        // Send invitation to target user
+        io.to(targetSocketId).emit('private-chat-invite', {
+          fromUser,
+          toUser,
+          roomCode
+        });
+
+        logActivity('Private chat invitation sent', { 
+          from: fromUser,
+          to: toUser,
+          roomCode,
+          targetSocketId
+        });
+      } else {
+        logActivity('Target user not found for private chat', { 
+          from: fromUser,
+          to: toUser,
+          availableUsers: Array.from(userSockets.values()).map(u => u.nickname)
+        });
+      }
+
+    } catch (error) {
+      logActivity('Error in private-chat-invite', { error: error.message });
     }
   });
 
