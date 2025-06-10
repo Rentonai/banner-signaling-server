@@ -287,7 +287,11 @@ io.on('connection', (socket) => {
 
       // Find the target user's socket
       let targetSocketId = null;
+      console.log('Looking for user:', toUser);
+      console.log('Available users:', Array.from(userSockets.values()).map(u => u.nickname));
+      
       for (const [socketId, userInfo] of userSockets.entries()) {
+        console.log('Checking user:', userInfo.nickname, 'vs', toUser);
         if (userInfo.nickname === toUser) {
           targetSocketId = socketId;
           break;
@@ -308,16 +312,22 @@ io.on('connection', (socket) => {
           roomCode,
           targetSocketId
         });
+        
+        console.log('✅ Invitation sent successfully to:', toUser, 'socket:', targetSocketId);
       } else {
         logActivity('Target user not found for private chat', { 
           from: fromUser,
           to: toUser,
           availableUsers: Array.from(userSockets.values()).map(u => u.nickname)
         });
+        
+        console.log('❌ User not found:', toUser);
+        console.log('Available users:', Array.from(userSockets.values()).map(u => u.nickname));
       }
 
     } catch (error) {
       logActivity('Error in private-chat-invite', { error: error.message });
+      console.error('Error in private-chat-invite:', error);
     }
   });
 
